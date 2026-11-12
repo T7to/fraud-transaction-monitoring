@@ -1,0 +1,27 @@
+#for db connection
+database:
+  host: localhost
+  port: 5432
+  dbname: fraud
+  user: postgres
+
+#for data
+data:
+  csv_path: data/paysim.csv
+  monitored_types: [TRANSFER, CASH_OUT]
+
+#time split for training and testing
+split: 
+  train_end_step: 288 #from day 1-12
+  valid_end_step: 360 #from day 13-15
+
+#for rule thresholds
+#rules:{}
+
+#model setting
+model:
+  alert_budget_per_day: 200
+  drop_features: []
+
+#control
+controls: {}
