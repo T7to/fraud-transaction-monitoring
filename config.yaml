@@ -17,6 +17,12 @@ split:
 
 #for rule thresholds
 #rules:{}
+quality:
+  valid_types: [CASH_IN, CASH_OUT, DEBIT, PAYMENT, TRANSFER]
+  min_step: 1
+  max_step: 743
+  balance_tolerance: 1.0
+
 
 #model setting
 model:
