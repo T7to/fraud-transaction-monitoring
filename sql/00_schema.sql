@@ -46,8 +46,17 @@ CREATE TABLE IF NOT EXISTS alerts (
     day       INTEGER NOT NULL,
     amount    NUMERIC(18, 2),
     isfraud   SMALLINT,
-    score     NUMERIC(10, 6),
+    score     DOUBLE PRECISION,
     PRIMARY KEY (run_id, rule_id, txn_id)
+);
+
+-- Model risk score for every monitored transaction, per run.
+CREATE TABLE IF NOT EXISTS model_scores (
+    run_id   TEXT             NOT NULL,
+    txn_id   BIGINT           NOT NULL,
+    split    TEXT             NOT NULL,
+    score    DOUBLE PRECISION NOT NULL,
+    PRIMARY KEY (run_id, txn_id)
 );
 
 -- Performance of each rule per evaluation period.

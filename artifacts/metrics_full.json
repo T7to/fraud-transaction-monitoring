@@ -1,0 +1,38 @@
+{
+  "variant": "full",
+  "features": [
+    "is_transfer",
+    "log_amount",
+    "pct_balance_moved",
+    "orig_zero_balance_before",
+    "orig_drained",
+    "error_balance_orig",
+    "error_balance_dest",
+    "dest_balance_unchanged",
+    "dest_prior_txn_24h",
+    "dest_prior_amount_24h",
+    "dest_prior_txn_all",
+    "dest_prior_avg_amount",
+    "hours_since_dest_last_txn",
+    "dest_first_seen",
+    "amount_vs_dest_avg"
+  ],
+  "pr_auc": {
+    "logistic": {
+      "valid": 0.9591,
+      "test": 0.9903
+    },
+    "lightgbm": {
+      "valid": 0.9986,
+      "test": 0.9999
+    }
+  },
+  "champion": "lightgbm",
+  "budget_per_day": 200,
+  "threshold": 0.9999999980323278,
+  "test_alerts": {
+    "alerts_per_day": 259.2,
+    "precision": 0.9998,
+    "recall": 0.9881
+  }
+}
