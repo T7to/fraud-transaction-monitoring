@@ -15,14 +15,35 @@ split:
   train_end_step: 288 #from day 1-12
   valid_end_step: 360 #from day 13-15
 
-#for rule thresholds
-#rules:{}
+#data quality checks
 quality:
   valid_types: [CASH_IN, CASH_OUT, DEBIT, PAYMENT, TRANSFER]
   min_step: 1
   max_step: 743
   balance_tolerance: 1.0
 
+#rule scenarios: one SQL file per rule, thresholds as parameters
+rules:
+  R01_ACCOUNT_DRAIN:
+    enabled: true
+    file: sql/rules/R01_account_drain.sql
+    params: {drain_ratio: 0.95, min_amount: 10000}
+  R02_EMPTY_DEST_HIGH_VALUE:
+    enabled: true
+    file: sql/rules/R02_empty_dest_high_value.sql
+    params: {min_amount: 100000}
+  R03_MULE_FAN_IN:
+    enabled: true
+    file: sql/rules/R03_mule_fan_in.sql
+    params: {min_senders: 5, min_total: 500000}
+  R04_STRUCTURING:
+    enabled: true
+    file: sql/rules/R04_structuring.sql
+    params: {threshold: 200000, band: 0.10, min_count: 3}
+  R05_BALANCE_MISMATCH:
+    enabled: true
+    file: sql/rules/R05_balance_mismatch.sql
+    params: {tolerance: 1.0, min_amount: 50000}
 
 #model setting
 model:
