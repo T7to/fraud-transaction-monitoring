@@ -35,22 +35,3 @@ WINDOW
 
 ALTER TABLE features ADD PRIMARY KEY (txn_id);
 ANALYZE features;
-
--- per account per day, for R03.
--- needs COUNT(DISTINCT) which doesn't work in window functions.
--- covers the whole day (incl. later txns) so only use it in end-of-day rules, NOT the model
-
-DROP TABLE IF EXISTS dest_daily;
-
-CREATE TABLE dest_daily AS
-SELECT
-    namedest,
-    day,
-    COUNT(*)                 AS txn_count,
-    COUNT(DISTINCT nameorig) AS distinct_senders,
-    SUM(amount)              AS total_amount
-FROM transactions_clean
-GROUP BY namedest, day;
-
-ALTER TABLE dest_daily ADD PRIMARY KEY (namedest, day);
-ANALYZE dest_daily;

@@ -11,6 +11,7 @@ from src.features import build_features
 from src.load import load_raw
 from src.model import run_model
 from src.quality import build_clean_table, run_quality_checks
+from src.report import export_alert_queue
 from src.rules import evaluate_rules, run_rules
 
 logger = logging.getLogger("pipeline")
@@ -43,7 +44,9 @@ def run_stages(conn, cfg, run_id, skip_load):
     stage("rules", run_rules, conn, cfg, run_id)
     stage("evaluate rules", evaluate_rules, conn, cfg, run_id)
     stage("model", run_model, conn, cfg)
-    return stage("controls", run_controls, conn, cfg, run_id)
+    controls_ok = stage("controls", run_controls, conn, cfg, run_id)
+    stage("alert queue", export_alert_queue, conn, cfg, run_id)
+    return controls_ok
 
 
 def set_status(conn, run_id, status):
