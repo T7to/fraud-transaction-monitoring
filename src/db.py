@@ -1,32 +1,24 @@
-"""db helpers: the only module that talks to Postgresql directly"""
-
+import io
 import logging
 import os
+from decimal import Decimal
 
+import pandas as pd
 import psycopg2
 import yaml
 from dotenv import load_dotenv
-import pandas as pd
-from decimal import Decimal
-
-
-import io
 from psycopg2 import sql as pgsql
 
 logger = logging.getLogger(__name__)
 
+
 def load_config(path="config.yaml"):
-    """read the YAML config so every threshold lives in one reviewed file"""
     with open(path) as f:
         return yaml.safe_load(f)
 
-def get_connection(cfg):
-    """Open a PostgreSQL connection.
 
-    Environment variables override config.yaml so the same code can point to
-    a laptop, test or production database without editing files.
-    The password only ever comes from the environment (.env), never from config.
-    """
+def get_connection(cfg):
+    # password only comes from .env, env vars can override the rest
     load_dotenv()
     db = cfg["database"]
     conn = psycopg2.connect(
@@ -41,10 +33,6 @@ def get_connection(cfg):
 
 
 def run_sql_file(conn, path, params=None):
-    """Execute a .sql file so all SQL logic stays in versioned files, not Python strings.
-
-    params fills %(name)s placeholders safely (no string formatting of values).
-    """
     with open(path) as f:
         sql = f.read()
     with conn.cursor() as cur:
@@ -54,27 +42,25 @@ def run_sql_file(conn, path, params=None):
 
 
 def query_df(conn, sql, params=None):
-    """Run a SELECT and return a DataFrame, for small result sets analysed in Python.
-
-    NUMERIC columns arrive as Decimal; convert them to float so pandas maths works.
-    """
     with conn.cursor() as cur:
         cur.execute(sql, params)
         rows = cur.fetchall()
         columns = [col[0] for col in cur.description]
     df = pd.DataFrame(rows, columns=columns)
+
+    # NUMERIC comes back as Decimal, which breaks pandas maths -> make it float
     for col in df.columns:
         first = df[col].dropna().head(1)
         if not first.empty and isinstance(first.iloc[0], Decimal):
             df[col] = df[col].astype(float)
     return df
 
+
 def copy_to_df(conn, query):
-    """Export a large query result to pandas via COPY, much faster than fetchall on millions of rows."""
+    # COPY is way faster than fetchall when there are millions of rows
     buffer = io.StringIO()
-    copy_sql = f"COPY ({query}) TO STDOUT WITH CSV HEADER"
     with conn.cursor() as cur:
-        cur.copy_expert(copy_sql, buffer)
+        cur.copy_expert(f"COPY ({query}) TO STDOUT WITH CSV HEADER", buffer)
     buffer.seek(0)
     df = pd.read_csv(buffer)
     logger.info("Exported %d rows via COPY", len(df))
@@ -82,14 +68,10 @@ def copy_to_df(conn, query):
 
 
 def copy_from_df(conn, df, table):
-    """Bulk-insert a DataFrame via COPY: one data stream instead of one INSERT per row.
-
-    Table and column names are quoted with sql.Identifier, because identifiers
-    cannot be passed as %(name)s parameters.
-    """
     buffer = io.StringIO()
     df.to_csv(buffer, index=False, header=False)
     buffer.seek(0)
+    # table/column names can't be passed as %(x)s params, so quote them this way
     copy_sql = pgsql.SQL("COPY {} ({}) FROM STDIN WITH CSV").format(
         pgsql.Identifier(table),
         pgsql.SQL(", ").join(pgsql.Identifier(c) for c in df.columns),
@@ -97,17 +79,11 @@ def copy_from_df(conn, df, table):
     with conn.cursor() as cur:
         cur.copy_expert(copy_sql, buffer)
     conn.commit()
-    logger.info("Loaded %d rows into %s via COPY", len(df), table)
+    logger.info("Loaded %d rows into %s", len(df), table)
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    cfg = load_config()
-    conn = get_connection(cfg)
-    try:
-        with conn.cursor() as cur:
-            cur.execute("CREATE TEMP TABLE t (a INT, b NUMERIC)")
-        copy_from_df(conn, pd.DataFrame({"a": [1, 2, 3], "b": [1.5, 2.5, 3.5]}), "t")
-        print(copy_to_df(conn, "SELECT * FROM t"))
-    finally:
-        conn.close()
+    conn = get_connection(load_config())
+    print(query_df(conn, "SELECT 1 AS ok"))
+    conn.close()

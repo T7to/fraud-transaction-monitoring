@@ -1,5 +1,5 @@
--- R05 Balance mismatch (system or control anomaly):
--- the sender's balance does not move by the transaction amount.
+-- R05 sender balance doesn't move by the amount sent
+-- (more of a system/data issue than fraud, kept to show that)
 SELECT txn_id, step, day, amount, isfraud
 FROM transactions_clean
 WHERE ABS(newbalanceorig + amount - oldbalanceorg) > %(tolerance)s

@@ -1,6 +1,5 @@
--- R02 Empty destination, high value (mule / pass-through account):
--- a large transfer to an account whose balance is 0 before and after,
--- meaning the money does not stay there.
+-- R02 big transfer to an account that stays at 0 before and after
+-- (money passes straight through -> looks like a mule account)
 SELECT txn_id, step, day, amount, isfraud
 FROM transactions_clean
 WHERE type = 'TRANSFER'

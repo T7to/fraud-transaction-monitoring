@@ -1,7 +1,3 @@
--- Feature table: one row per monitored transaction.
--- Destination history uses window frames that end at 1 PRECEDING,
--- so a feature only ever sees the past (no look-ahead leakage).
-
 DROP TABLE IF EXISTS features;
 
 CREATE TABLE features AS
@@ -11,7 +7,7 @@ SELECT
     t.day,
     t.isfraud,
 
-    -- Transaction-level features
+    -- about the transaction itself
     (t.type = 'TRANSFER')::INT                              AS is_transfer,
     ln(1 + t.amount)                                        AS log_amount,
     t.amount / NULLIF(t.oldbalanceorg, 0)                   AS pct_balance_moved,
@@ -21,7 +17,7 @@ SELECT
     t.oldbalancedest + t.amount - t.newbalancedest          AS error_balance_dest,
     (t.oldbalancedest = 0 AND t.newbalancedest = 0)::INT    AS dest_balance_unchanged,
 
-    -- Destination history (past only)
+    -- the receiving account's history
     COUNT(*) OVER w24                                       AS dest_prior_txn_24h,
     COALESCE(SUM(t.amount) OVER w24, 0)                     AS dest_prior_amount_24h,
     COUNT(*) OVER wall                                      AS dest_prior_txn_all,
@@ -40,9 +36,9 @@ WINDOW
 ALTER TABLE features ADD PRIMARY KEY (txn_id);
 ANALYZE features;
 
--- Daily destination summary for the mule fan-in rule (R03).
--- COUNT(DISTINCT) is not allowed in window functions, so it is aggregated here.
--- It covers the whole day, so it is used by end-of-day rules only, never as a model feature.
+-- per account per day, for R03.
+-- needs COUNT(DISTINCT) which doesn't work in window functions.
+-- covers the whole day (incl. later txns) so only use it in end-of-day rules, NOT the model
 
 DROP TABLE IF EXISTS dest_daily;
 

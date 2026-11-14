@@ -1,6 +1,5 @@
--- R03 Mule fan-in (collection account):
--- a destination receives money from many different senders in one day.
--- End-of-day rule: alerts every transaction to that destination on that day.
+-- R03 mule fan-in: one account gets money from lots of different people in a day.
+-- runs end of day, flags all of that account's transactions for the day
 SELECT t.txn_id, t.step, t.day, t.amount, t.isfraud
 FROM transactions_clean t
 JOIN dest_daily d

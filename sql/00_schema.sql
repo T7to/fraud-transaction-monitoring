@@ -1,10 +1,8 @@
--- Raw transactions: untouched copy of the source file.
--- IF NOT EXISTS keeps this file safe to rerun; load.py truncates before each load.
 CREATE TABLE IF NOT EXISTS transactions_raw (
     txn_id BIGSERIAL PRIMARY KEY,
     step INTEGER,
     type TEXT,
-    amount NUMERIC(18, 2), --18 digits with 2 after decimal point
+    amount NUMERIC(18, 2),
     nameorig TEXT,
     oldbalanceorg NUMERIC(18, 2),
     newbalanceorig NUMERIC(18, 2),
@@ -15,7 +13,7 @@ CREATE TABLE IF NOT EXISTS transactions_raw (
     isflaggedfraud SMALLINT
 );
 
--- Pipeline run register: one row per run, for audit trail.
+-- one row per pipeline run
 CREATE TABLE IF NOT EXISTS pipeline_runs (
     run_id      TEXT PRIMARY KEY,
     started_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -24,7 +22,7 @@ CREATE TABLE IF NOT EXISTS pipeline_runs (
     notes       TEXT
 );
 
--- Data quality results: one row per check per run.
+-- data quality results, one row per check per run
 CREATE TABLE IF NOT EXISTS dq_results (
     run_id       TEXT NOT NULL,
     check_name   TEXT NOT NULL,
@@ -37,7 +35,7 @@ CREATE TABLE IF NOT EXISTS dq_results (
     PRIMARY KEY (run_id, check_name)
 );
 
--- Alerts raised by rules and the model: one row per (run, rule, transaction).
+-- every alert any rule raised
 CREATE TABLE IF NOT EXISTS alerts (
     run_id    TEXT    NOT NULL,
     rule_id   TEXT    NOT NULL,
@@ -46,20 +44,10 @@ CREATE TABLE IF NOT EXISTS alerts (
     day       INTEGER NOT NULL,
     amount    NUMERIC(18, 2),
     isfraud   SMALLINT,
-    score     DOUBLE PRECISION,
     PRIMARY KEY (run_id, rule_id, txn_id)
 );
 
--- Model risk score for every monitored transaction, per run.
-CREATE TABLE IF NOT EXISTS model_scores (
-    run_id   TEXT             NOT NULL,
-    txn_id   BIGINT           NOT NULL,
-    split    TEXT             NOT NULL,
-    score    DOUBLE PRECISION NOT NULL,
-    PRIMARY KEY (run_id, txn_id)
-);
-
--- Performance of each rule per evaluation period.
+-- how each rule did, per period
 CREATE TABLE IF NOT EXISTS rule_performance (
     run_id          TEXT    NOT NULL,
     rule_id         TEXT    NOT NULL,
@@ -71,4 +59,15 @@ CREATE TABLE IF NOT EXISTS rule_performance (
     recall          NUMERIC(7, 4),
     alerts_per_day  NUMERIC(12, 2),
     PRIMARY KEY (run_id, rule_id, period)
+);
+
+-- control results
+CREATE TABLE IF NOT EXISTS control_log (
+    run_id      TEXT NOT NULL,
+    control_id  TEXT NOT NULL,
+    status      TEXT NOT NULL,
+    expected    TEXT,
+    actual      TEXT,
+    checked_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (run_id, control_id)
 );

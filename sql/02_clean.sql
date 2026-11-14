@@ -1,6 +1,3 @@
--- Monitored population: only the transaction types in scope (from config).
--- Built from transactions_raw, which stays untouched.
-
 DROP TABLE IF EXISTS transactions_clean;
 
 CREATE TABLE transactions_clean AS
@@ -8,7 +5,7 @@ SELECT
     txn_id,
     step,
     (step - 1) / 24 + 1      AS day,
-    mod(step - 1, 24)        AS hour_of_day,
+    mod(step - 1, 24)        AS hour_of_day,  -- mod() not the percent sign, psycopg2 chokes on it
     type,
     amount,
     nameorig,

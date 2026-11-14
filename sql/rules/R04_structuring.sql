@@ -1,8 +1,8 @@
--- R04 Structuring (smurfing):
--- several transactions to the same destination within 24 hours, each just
--- below a reporting threshold. Alerts every transaction in the pattern.
+-- R04 structuring / smurfing
+-- 3+ payments to the same account within 24h, each just under the threshold.
+-- flags every payment that's part of the pattern
 
--- 1. Candidates: amounts just below the threshold (between threshold * (1 - band) and threshold).
+-- payments just below the threshold
 WITH candidates AS (
     SELECT txn_id, step, day, amount, isfraud, namedest
     FROM transactions_clean
@@ -10,7 +10,7 @@ WITH candidates AS (
       AND amount <  %(threshold)s
 ),
 
--- 2. For each candidate, count candidates to the same destination in the 24 hours ending at it.
+-- how many of those went to the same account in the 24h up to each one
 windows AS (
     SELECT namedest,
            step AS end_step,
@@ -19,7 +19,6 @@ windows AS (
     FROM candidates
 )
 
--- 3. Alert every candidate that falls inside a window with enough transactions.
 SELECT DISTINCT c.txn_id, c.step, c.day, c.amount, c.isfraud
 FROM candidates c
 JOIN windows w

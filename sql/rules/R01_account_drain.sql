@@ -1,5 +1,5 @@
--- R01 Account drain (account takeover):
--- the sender moves almost all of their balance in one go.
+-- R01 account drain (account takeover)
+-- sender moves almost their whole balance in one go
 SELECT txn_id, step, day, amount, isfraud
 FROM transactions_clean
 WHERE oldbalanceorg > 0
